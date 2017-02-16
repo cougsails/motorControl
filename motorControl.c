@@ -101,9 +101,23 @@ void haltBlocking() {
 / 45 degrees will require a full stop before turning. The CanSat will then
 / continue doing whatever it was doing before. This func is non-Blocking
 *******************************************************************************/
-void turnRight(int angle){
+void turnRightHard(int angle){
 	angleSpeed_i = angle;	// Give thread the angle to turn.
 	action = 4;				// Alert thread to turn.
+	threadReady = 0;		// Make sure no other functions are called.
+	return;
+}//turnRight
+
+/*******************************************************************************
+/ void turnRightSoft
+/ This functions takes in an angle, and then translates it into a right turn
+/ at that angle. The integer angle will be from 0-360. Any angle greater than
+/ 45 degrees will require a full stop before turning. The CanSat will then
+/ continue doing whatever it was doing before. This func is non-Blocking
+*******************************************************************************/
+void turnRightSoft(int angle){
+	angleSpeed_i = angle;	// Give thread the angle to turn.
+	action = 41;				// Alert thread to turn.
 	threadReady = 0;		// Make sure no other functions are called.
 	return;
 }//turnRight
@@ -115,41 +129,20 @@ void turnRight(int angle){
 / 45 degrees will require a full stop before turning. The CanSat will then
 / continue doing whatever it was doing before. This function is blocking 
 *******************************************************************************/
-void turnRightBlocking(int angle) {
+void turnRightSoftBlocking(int angle) {
 	
 	int prevAction = curAction; // What we were doing before
 
-	if(curAction == 3) { // if we were stopped.
-		curSpeed = 5;    // default speed. Default direction is forward
+	if(curAction == 3) { // If we were stopped.
+		curSpeed = 5;    // Default speed. Default direction is forward.
 	}//if curAction
 	
 	curAction = 4;
 
-	if(angle < 45) {	// if we don't turn that much
-		softPwmWrite(leftMotorSpeed,  curSpeed*10);
-		softPwmWrite(rightMotorSpeed, curSpeed*5);	// reduce right speed
-		delay(angle*60/((curSpeed/3)+1));	// Math will need fixed
-		softPwmWrite(rightMotorSpeed, curSpeed*10); // Return to going forward
-	}//if angle
-		
-	else { // We want a big turn
-		haltBlocking(); // Stop the CanSat
-		curAction = 4;  // Reset our current action
-		softPwmWrite(rightMotorSpeed, curSpeed*10);	// ensure we're moving
-		softPwmWrite(leftMotorSpeed,  curSpeed*10); // ensure we're moving
-		digitalWrite(rightMotorDir, BACKWARD); // Backup right motor
-		digitalWrite(leftMotorDir,  FORWARD);  // Move left motor forward.
-		delay((angle*15)/(curSpeed/3+1));      // Math will need checked
-		
-		if (prevAction == 1) { // if we were moving forward
-			digitalWrite(rightMotorDir, FORWARD); // Move foward again
-			curAction = 1; 	// Reset current action
-		} //if prevAction
-		else if (prevAction == 2) {  // If we were backing up 
-			digitalWrite(leftMotorDir, BACKWARD); // Back up again
-			curAction = 2; 	// Reset current action.
-		} //else if prevAction
-	}//else angle > 45
+	softPwmWrite(leftMotorSpeed,  curSpeed*10); // Ensure left is moving
+	softPwmWrite(rightMotorSpeed, curSpeed*5);	// reduce right speed
+	delay(angle*60/((curSpeed/3)+1));			// Math will need fixed
+	softPwmWrite(rightMotorSpeed, curSpeed*10); // Return to going forward
 
 	curAction = prevAction; // Reset current action
 	
@@ -157,29 +150,16 @@ void turnRightBlocking(int angle) {
 		haltBlocking();   // Now we aren't.
 	}
 	
-}//turnRightBlocking
+}//turnRightSoftBlocking
 
 /*******************************************************************************
-/ void turnLeft
-/ This functions takes in an angle, and then translates it into a left turn
-/ at that angle. The integer angle will be from 0-180. Any angle greater than
-/ 45 degrees will require a full stop before turning.
-*******************************************************************************/
-void turnLeft(int angle){
-	angleSpeed_i = angle;	// Give thread the angle to turn.
-	action = 5;				// Alert thread to turn left.
-	threadReady = 0;		// Make sure no other functions are called.
-	return;
-}//turnLeft
-
-/*******************************************************************************
-/ void turnLeftBlocking
+/ void turnRightHardBlocking
 / This functions takes in an angle, and then translates it into a right turn
 / at that angle. The integer angle will be from 0-360. Any angle greater than
 / 45 degrees will require a full stop before turning. The CanSat will then
 / continue doing whatever it was doing before. This function is blocking 
 *******************************************************************************/
-void turnLeftBlocking(int angle) {
+void turnRightHardBlocking(int angle) {
 	
 	int prevAction = curAction; // What we were doing before
 
@@ -189,31 +169,120 @@ void turnLeftBlocking(int angle) {
 	
 	curAction = 4;
 
-	if(angle < 45) {	// if we don't turn that much
-		softPwmWrite(rightMotorSpeed,  curSpeed*10);	// Make sure moving
-		softPwmWrite(leftMotorSpeed, curSpeed*5);	// reduce leftspeed
-		delay(angle*15/((curSpeed/3)+1));	// Math will need fixed
-		softPwmWrite(leftMotorSpeed, curSpeed*10); // Return to going forward
-	}//if angle
+	haltBlocking(); // Stop the CanSat
+	curAction = 4;  // Reset our current action
+	softPwmWrite(rightMotorSpeed, curSpeed*10);	// ensure we're moving
+	softPwmWrite(leftMotorSpeed,  curSpeed*10); // ensure we're moving
+	digitalWrite(rightMotorDir, BACKWARD); // Backup right motor
+	digitalWrite(leftMotorDir,  FORWARD);  // Move left motor forward.
+	delay((angle*15)/(curSpeed/3+1));      // Math will need checked
 		
-	else { // We want a big turn
-		haltBlocking(); // Stop the CanSat
-		curAction = 4;  // Reset our current action
-		softPwmWrite(rightMotorSpeed, curSpeed*10);
-		softPwmWrite(leftMotorSpeed,  curSpeed*10);
-		digitalWrite(rightMotorDir, FORWARD); 	// Make right motor forward
-		digitalWrite(leftMotorDir,  BACKWARD);  // Move left motor backward.
-		delay((angle*15)/(curSpeed/3+1));      	// Math will need checked
+	if (prevAction == 1) { // if we were moving forward
+		digitalWrite(rightMotorDir, FORWARD); // Move foward again
+		curAction = 1; 	// Reset current action
+	} //if prevAction
+	else if (prevAction == 2) {  // If we were backing up 
+		digitalWrite(leftMotorDir, BACKWARD); // Back up again
+		curAction = 2; 	// Reset current action.
+	} //else if prevAction
+
+	curAction = prevAction; // Reset current action
+	
+	if(prevAction == 3) { // We were stopped.
+		haltBlocking();   // Now we aren't.
+	}
+	
+}//turnRightHardBlocking
+
+/*******************************************************************************
+/ void turnLeft
+/ This functions takes in an angle, and then translates it into a left turn
+/ at that angle. The integer angle will be from 0-180. Any angle greater than
+/ 45 degrees will require a full stop before turning.
+*******************************************************************************/
+void turnLeftHard(int angle){
+	angleSpeed_i = angle;	// Give thread the angle to turn.
+	action = 5;				// Alert thread to turn left.
+	threadReady = 0;		// Make sure no other functions are called.
+	return;
+}//turnLeftHard
+
+/*******************************************************************************
+/ void turnLeft
+/ This functions takes in an angle, and then translates it into a left turn
+/ at that angle. The integer angle will be from 0-180. Any angle greater than
+/ 45 degrees will require a full stop before turning.
+*******************************************************************************/
+void turnLeftSoft(int angle){
+	angleSpeed_i = angle;	// Give thread the angle to turn.
+	action = 51;				// Alert thread to turn left.
+	threadReady = 0;		// Make sure no other functions are called.
+	return;
+}//turnLeftSoft
+
+/*******************************************************************************
+/ void turnLeftHardBlocking
+/ This functions takes in an angle, and then translates it into a right turn
+/ at that angle. The integer angle will be from 0-360. Any angle greater than
+/ 45 degrees will require a full stop before turning. The CanSat will then
+/ continue doing whatever it was doing before. This function is blocking 
+*******************************************************************************/
+void turnLeftHardBlocking(int angle) {
+	
+	int prevAction = curAction; // What we were doing before
+
+	if(curAction == 3) { // if we were stopped.
+		curSpeed = 5;    // default speed. Default direction is forward
+	}//if curAction
+	
+	curAction = 4;
+
 		
-		if (prevAction == 1) { // if we were moving forward
-			digitalWrite(leftMotorDir, FORWARD); // Move foward again
-			curAction = 1; 	// Reset current action
-		} //if prevAction
-		else if (prevAction == 2) {  // If we were backing up 
-			digitalWrite(rightMotorDir, BACKWARD); // Back up again
-			curAction = 2; 	// Reset current action.
-		} //else if prevAction
-	}//else angle > 45
+	haltBlocking(); // Stop the CanSat
+	curAction = 4;  // Reset our current action
+	softPwmWrite(rightMotorSpeed, curSpeed*10);
+	softPwmWrite(leftMotorSpeed,  curSpeed*10);
+	digitalWrite(rightMotorDir, FORWARD); 	// Make right motor forward
+	digitalWrite(leftMotorDir,  BACKWARD);  // Move left motor backward.
+	delay((angle*15)/(curSpeed/3+1));      	// Math will need checked
+	
+	if (prevAction == 1) { // if we were moving forward
+		digitalWrite(leftMotorDir, FORWARD); // Move foward again
+		curAction = 1; 	// Reset current action
+	} //if prevAction
+	else if (prevAction == 2) {  // If we were backing up 
+		digitalWrite(rightMotorDir, BACKWARD); // Back up again
+		curAction = 2; 	// Reset current action.
+	} //else if prevAction
+
+	curAction = prevAction; // Reset current action
+	
+	if(prevAction == 3) { // We were stopped.
+		haltBlocking();   // Now we aren't.
+	}	
+}//turnLeftHardBlocking
+
+/*******************************************************************************
+/ void turnLeftSoftBlocking
+/ This functions takes in an angle, and then translates it into a right turn
+/ at that angle. The integer angle will be from 0-360. Any angle greater than
+/ 45 degrees will require a full stop before turning. The CanSat will then
+/ continue doing whatever it was doing before. This function is blocking 
+*******************************************************************************/
+void turnLeftSoftBlocking(int angle) {
+	
+	int prevAction = curAction; // What we were doing before
+
+	if(curAction == 3) { // if we were stopped.
+		curSpeed = 5;    // default speed. Default direction is forward
+	}//if curAction
+	
+	curAction = 4;
+
+	softPwmWrite(rightMotorSpeed,  curSpeed*10);	// Make sure moving
+	softPwmWrite(leftMotorSpeed, curSpeed*5);	// reduce leftspeed
+	delay(angle*15/((curSpeed/3)+1));	// Math will need fixed
+	softPwmWrite(leftMotorSpeed, curSpeed*10); // Return to going forward
 
 	curAction = prevAction; // Reset current action
 	
@@ -274,16 +343,26 @@ PI_THREAD (motorThread) {
 			action = 0; 		// Reset the action
 			threadReady = 1;    // Thread is ready to accept commands.
 		}//halt
-		else if (action == 4) { //turn right
-			turnRightBlocking(angleSpeed_i);	// Turn right
+		else if (action == 4) { //turn right hard
+			turnRightHardBlocking(angleSpeed_i);	// Turn right
 			action = 0;			// Reset the action
 			threadReady = 1; 	// Thread is ready to accept commands
 		}//turn right
+		else if (action == 41) { //turn right softly
+			turnRightSoftBlocking(angleSpeed_i);
+			action = 0;			// Reset the action
+			threadReady = 1;	// Thread is ready again.
+		}//turn right soft
 		else if (action == 5) { //turn left
-			turnLeftBlocking(angleSpeed_i); 	// Turn left
+			turnLeftHardBlocking(angleSpeed_i); 	// Turn left
 			action = 0;
 			threadReady = 1;
 		}//turn left
+		else if (action == 51) {
+			turnLeftSoftBlocking(angleSpeed_i);
+			action = 0;
+			threadReady = 1;
+		}
 	}//while
 }//thread
 
