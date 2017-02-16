@@ -167,10 +167,12 @@ void turnRightHardBlocking(int angle) {
 		curSpeed = 5;    // default speed. Default direction is forward
 	}//if curAction
 	
+	int prevSpeed = curSpeed;
 	curAction = 4;
 
 	haltBlocking(); // Stop the CanSat
 	curAction = 4;  // Reset our current action
+	curSpeed = prevSpeed;
 	softPwmWrite(rightMotorSpeed, curSpeed*10);	// ensure we're moving
 	softPwmWrite(leftMotorSpeed,  curSpeed*10); // ensure we're moving
 	digitalWrite(rightMotorDir, BACKWARD); // Backup right motor
@@ -235,11 +237,13 @@ void turnLeftHardBlocking(int angle) {
 		curSpeed = 5;    // default speed. Default direction is forward
 	}//if curAction
 	
+	int prevSpeed = curSpeed;
+
 	curAction = 4;
 
-		
 	haltBlocking(); // Stop the CanSat
 	curAction = 4;  // Reset our current action
+	curSpeed  = prevSpeed;
 	softPwmWrite(rightMotorSpeed, curSpeed*10);
 	softPwmWrite(leftMotorSpeed,  curSpeed*10);
 	digitalWrite(rightMotorDir, FORWARD); 	// Make right motor forward
@@ -281,7 +285,7 @@ void turnLeftSoftBlocking(int angle) {
 
 	softPwmWrite(rightMotorSpeed,  curSpeed*10);	// Make sure moving
 	softPwmWrite(leftMotorSpeed, curSpeed*5);	// reduce leftspeed
-	delay(angle*15/((curSpeed/3)+1));	// Math will need fixed
+	delay(angle*60/((curSpeed/3)+1));	// Math will need fixed
 	softPwmWrite(leftMotorSpeed, curSpeed*10); // Return to going forward
 
 	curAction = prevAction; // Reset current action
